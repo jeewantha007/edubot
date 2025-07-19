@@ -5,7 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
-import { sendMessage, saveMessageToHistory, fetchChatHistory } from '@/service/chatService';
+import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions } from '@/service/chatService';
 
 interface Message {
   id: string;
@@ -13,6 +13,15 @@ interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   rating?: number;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  preview: string;
+  timestamp: string;
+  messageCount: number;
+  category: 'learn' | 'practice' | 'help' | 'general';
 }
 
 export const Edubot: React.FC = () => {
@@ -23,6 +32,7 @@ export const Edubot: React.FC = () => {
   const [currentChatId, setCurrentChatId] = useState('1');
   const [showQuickActions, setShowQuickActions] = useState(true);
   const { toast } = useToast();
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
 
   // Session ID logic
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -240,22 +250,54 @@ export const Edubot: React.FC = () => {
     setIsHistoryOpen(!isHistoryOpen);
   };
 
+  // Map backend session to ChatSession template
+  function mapSessionToHistoryTemplate(session: any): ChatSession {
+    const lastMsg = session.messages[session.messages.length - 1];
+    return {
+      id: session.sessionId,
+      title: session.messages[0]?.text?.slice(0, 30) || 'Untitled Chat',
+      preview: lastMsg?.text?.slice(0, 50) || '',
+      timestamp: lastMsg?.timestamp || session.createdAt,
+      messageCount: session.messages.length,
+      category: 'general', // You can improve this if you have category info
+    };
+  }
+
+  // Load all chat sessions when history tab is opened
+  const loadChatSessions = useCallback(() => {
+    fetchAllSessions(null)
+      .then(data => {
+        if (data.sessions) {
+          setChatSessions(data.sessions.map(mapSessionToHistoryTemplate));
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch chat sessions:', err);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (isHistoryOpen) {
+      loadChatSessions();
+    }
+  }, [isHistoryOpen, loadChatSessions]);
+
+  // Update handleNewChat to generate a new sessionId and clear messages
+  const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const handleNewChat = () => {
-    setMessages([]);
-    setCurrentChatId(`chat_${Date.now()}`);
-    setIsHistoryOpen(false);
-    setShowQuickActions(true);
-    // Generate a new sessionId for a new chat session
-    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('edubot_session_id', newSessionId);
+    const newSessionId = generateSessionId();
     setSessionId(newSessionId);
-    console.log('Edubot new sessionId:', newSessionId); // Debug log
+    localStorage.setItem('edubot_session_id', newSessionId);
+    setMessages([]);
+    setCurrentChatId(newSessionId);
   };
 
+  // Update handleSelectChat to set sessionId and currentChatId
   const handleSelectChat = (chatId: string) => {
+    setSessionId(chatId);
+    localStorage.setItem('edubot_session_id', chatId);
     setCurrentChatId(chatId);
-    // In a real app, you would load the chat messages here
-    setIsHistoryOpen(false);
+    // Messages will be loaded by useEffect on sessionId
   };
 
   return (
@@ -266,6 +308,7 @@ export const Edubot: React.FC = () => {
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
         currentChatId={currentChatId}
+        chatSessions={chatSessions}
       />
       
       <div className="flex flex-col flex-1 min-w-0">

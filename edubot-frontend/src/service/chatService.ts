@@ -38,3 +38,10 @@ export async function fetchChatHistory(sessionId: string) {
   const response = await fetch(`${API_URL}/api/history?sessionId=${encodeURIComponent(sessionId)}`);
   return await response.json();
 }
+
+export async function fetchAllSessions(userId: string | null = null) {
+  let url = `${API_URL}/api/history`;
+  if (userId) url += `?userId=${encodeURIComponent(userId)}`;
+  const response = await fetch(url);
+  return await response.json();
+}

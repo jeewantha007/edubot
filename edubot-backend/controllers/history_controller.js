@@ -26,14 +26,14 @@ exports.saveMessage = async (req, res) => {
 exports.getHistory = async (req, res) => {
   try {
     const { sessionId, userId } = req.query;
-    if (!sessionId && !userId) {
-      return res.status(400).json({ error: 'sessionId or userId is required.' });
-    }
     let sessions;
     if (sessionId) {
       sessions = await ChatSession.find({ sessionId });
     } else if (userId) {
       sessions = await ChatSession.find({ userId });
+    } else {
+      // If neither is provided, return all sessions (for device-wide history)
+      sessions = await ChatSession.find({});
     }
     res.json({ sessions });
   } catch (error) {
