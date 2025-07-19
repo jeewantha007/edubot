@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ChatHeader } from './ChatHeader';
 import { ChatWindow } from './ChatWindow';
 import { ChatInput } from './ChatInput';
@@ -23,6 +23,18 @@ export const Edubot: React.FC = () => {
   const [currentChatId, setCurrentChatId] = useState('1');
   const [showQuickActions, setShowQuickActions] = useState(true);
   const { toast } = useToast();
+
+  // Session ID logic
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  useEffect(() => {
+    let sid = localStorage.getItem('edubot_session_id');
+    if (!sid) {
+      sid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('edubot_session_id', sid);
+    }
+    setSessionId(sid);
+    console.log('Edubot sessionId:', sid); // Debug log
+  }, []);
 
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -91,14 +103,22 @@ export const Edubot: React.FC = () => {
     const userMessage = addMessage(text, 'user');
     setIsTyping(true);
     try {
-      const response = await sendMessage(text, mapLanguage(currentLanguage));
+      if (!sessionId) throw new Error('No sessionId');
+      const response = await sendMessage(text, mapLanguage(currentLanguage), sessionId);
       addMessage(response.reply, 'bot');
     } catch (error) {
-      addMessage('Sorry, there was an error connecting to the server.', 'bot');
+      console.error('Error sending message:', error);
+      const errorMessages = {
+        en: 'Sorry, there was an error connecting to the server.',
+        si: 'සමාවෙන්න, සර්වරය සමඟ සම්බන්ධ වීමේ දෝෂයක් ඇත.',
+        ta: 'மன்னிக்கவும், சர்வருடன் இணைப்பதில் பிழை ஏற்பட்டது.'
+      };
+      const errorMsg = errorMessages[currentLanguage as keyof typeof errorMessages] || errorMessages.en;
+      addMessage(errorMsg, 'bot');
     } finally {
       setIsTyping(false);
     }
-  }, [addMessage, currentLanguage]);
+  }, [addMessage, currentLanguage, sessionId]);
 
   const handleQuickAction = useCallback((action: string) => {
     setShowQuickActions(false);
@@ -129,12 +149,33 @@ export const Edubot: React.FC = () => {
     if (userText) {
       addMessage(userText, 'user');
       
-      simulateTyping(() => {
-        const botResponse = getBotResponse(userText, action);
-        addMessage(botResponse, 'bot');
-      });
+      // For MCQ practice, send the message to the backend instead of using local response
+      if (action === 'practice') {
+        setIsTyping(true);
+        if (!sessionId) {
+          addMessage('Session error. Please refresh the page.', 'bot');
+          setIsTyping(false);
+          return;
+        }
+        sendMessage(userText, mapLanguage(currentLanguage), sessionId)
+          .then(response => {
+            addMessage(response.reply, 'bot');
+          })
+          .catch(error => {
+            addMessage('Sorry, there was an error connecting to the server.', 'bot');
+          })
+          .finally(() => {
+            setIsTyping(false);
+          });
+      } else {
+        // For other actions, use local responses
+        simulateTyping(() => {
+          const botResponse = getBotResponse(userText, action);
+          addMessage(botResponse, 'bot');
+        });
+      }
     }
-  }, [addMessage, currentLanguage]);
+  }, [addMessage, currentLanguage, sessionId]);
 
   const handleRateMessage = useCallback((messageId: string, rating: number) => {
     setMessages(prev => 
@@ -166,6 +207,11 @@ export const Edubot: React.FC = () => {
     setCurrentChatId(`chat_${Date.now()}`);
     setIsHistoryOpen(false);
     setShowQuickActions(true);
+    // Generate a new sessionId for a new chat session
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('edubot_session_id', newSessionId);
+    setSessionId(newSessionId);
+    console.log('Edubot new sessionId:', newSessionId); // Debug log
   };
 
   const handleSelectChat = (chatId: string) => {
