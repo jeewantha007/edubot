@@ -7,6 +7,8 @@ import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
 import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession } from '@/service/chatService';
 import { getUserIdFromToken } from '@/lib/utils';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { saveAs } from 'file-saver';
 
 interface Message {
   id: string;
@@ -296,6 +298,48 @@ export const Edubot: React.FC = () => {
       });
   }, [loadChatSessions]);
 
+  // Download chat session as DOCX
+  const handleDownloadChat = useCallback(async (chatId: string) => {
+    try {
+      // Find the session in chatSessions
+      const session = chatSessions.find(s => s.id === chatId);
+      if (!session) return;
+      // Fetch full session data from backend (to get all messages)
+      const data = await fetchChatHistory(chatId);
+      const backendSession = data.sessions && data.sessions.length > 0 ? data.sessions[0] : null;
+      if (!backendSession || !Array.isArray(backendSession.messages)) return;
+      // Format messages for DOCX with clear structure
+      const children = [
+        new Paragraph({
+          children: [
+            new TextRun({ text: session.title || 'Chat Session', bold: true, size: 32 }),
+          ],
+          spacing: { after: 200 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: '----------------------------------------', bold: true })],
+          spacing: { after: 200 },
+        }),
+        ...backendSession.messages.map((msg: any) =>
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${msg.role === 'user' ? 'You' : 'Bot'}  `, bold: true, color: msg.role === 'user' ? '0070C0' : '7030A0' }),
+              new TextRun({ text: msg.text, break: 1 }),
+            ],
+            spacing: { after: 150 },
+          })
+        )
+      ];
+      const doc = new Document({
+        sections: [{ properties: {}, children }]
+      });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${session.title || 'chat-session'}.docx`);
+    } catch (err) {
+      console.error('Failed to download chat as DOCX:', err);
+    }
+  }, [chatSessions]);
+
   useEffect(() => {
     if (isHistoryOpen) {
       loadChatSessions();
@@ -330,6 +374,7 @@ export const Edubot: React.FC = () => {
         currentChatId={currentChatId}
         chatSessions={chatSessions}
         onDeleteChat={handleDeleteChat}
+        onDownloadChat={handleDownloadChat}
       />
       
       <div className="flex flex-col flex-1 min-w-0">
