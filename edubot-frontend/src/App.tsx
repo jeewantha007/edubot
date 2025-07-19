@@ -1,32 +1,34 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/ThemeToggle";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import Login from './pages/Login';
+import { Edubot } from './components/Edubot';
+import { ThemeProvider } from '@/components/ThemeToggle';
 
-const queryClient = new QueryClient();
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+  useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('jwt_token'));
+  }, []);
+
+  return (
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route
+            path="/login"
+            element={<Login onLogin={() => setIsAuthenticated(true)} />}
+          />
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? <Edubot /> : <Navigate to="/login" replace />
+            }
+          />
+        </Routes>
+      </Router>
     </ThemeProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;

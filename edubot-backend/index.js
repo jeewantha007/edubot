@@ -16,7 +16,9 @@ app.use(cors({ origin: 'http://localhost:8080' }));
 app.use(express.json());
 
 const chatRoutes = require('./routes/chat_routes');
+const userRoutes = require('./routes/user_routes');
 app.use('/api', chatRoutes);
+app.use('/api', userRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

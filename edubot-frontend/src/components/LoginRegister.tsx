@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MessageCircle, Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import { login, register } from '@/service/authService';
 
 interface LoginRegisterProps {
   onLoginSuccess?: () => void;
@@ -65,14 +66,34 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      if (onLoginSuccess) {
-        onLoginSuccess();
+
+    try {
+      if (isLogin) {
+        // LOGIN
+        const data = await login({
+          username: formData.username || formData.email,
+          password: formData.password,
+        });
+        setIsLoading(false);
+        if (data.token) {
+          localStorage.setItem('jwt_token', data.token);
+          localStorage.setItem('username', data.username); // Store username
+          if (onLoginSuccess) onLoginSuccess();
+        }
+      } else {
+        // REGISTER
+        await register({
+          username: formData.username,
+          password: formData.password,
+          email: formData.email,
+        });
+        setIsLoading(false);
+        setIsLogin(true); // Switch to login tab
       }
-    }, 1500);
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrors({ password: err.message || 'Auth error' });
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {

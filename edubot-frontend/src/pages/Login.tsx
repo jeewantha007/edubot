@@ -1,11 +1,15 @@
 import { LoginRegister } from '@/components/LoginRegister';
 import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
+interface LoginProps {
+  onLogin?: () => void;
+}
+
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
 
   const handleLoginSuccess = () => {
-    // In a real app, you would handle authentication state here
+    if (onLogin) onLogin();
     navigate('/');
   };
 
