@@ -6,6 +6,7 @@ import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
 import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession } from '@/service/chatService';
+import { getUserIdFromToken } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -46,14 +47,18 @@ export const Edubot: React.FC = () => {
     console.log('Edubot sessionId:', sid); // Debug log
   }, []);
 
-  // Fetch chat history from backend when sessionId is set
+  // Get userId from JWT token (declare only once, above all uses)
+  const token = localStorage.getItem('jwt_token');
+  const userId = getUserIdFromToken(token);
+
+  // Fetch chat history from backend when sessionId or userId is set
   useEffect(() => {
-    if (sessionId) {
-      fetchChatHistory(sessionId)
+    if (sessionId && userId) {
+      fetchAllSessions(userId)
         .then(data => {
           if (data.sessions && data.sessions.length > 0) {
-            // Flatten all messages from the session (should only be one session per sessionId)
-            const session = data.sessions[0];
+            // Find the session matching the current sessionId
+            const session = data.sessions.find((s: any) => s.sessionId === sessionId);
             if (session && Array.isArray(session.messages)) {
               setMessages(session.messages.map((msg: any, idx: number) => ({
                 id: msg._id || `msg_${idx}`,
@@ -62,26 +67,30 @@ export const Edubot: React.FC = () => {
                 timestamp: new Date(msg.timestamp),
                 rating: msg.rating,
               })));
+            } else {
+              setMessages([]);
             }
+          } else {
+            setMessages([]);
           }
         })
         .catch(err => {
           console.error('Failed to fetch chat history:', err);
         });
     }
-  }, [sessionId]);
+  }, [sessionId, userId]);
 
   // Helper to save message to backend
   const persistMessage = useCallback((msg: Message) => {
     if (!sessionId) return;
-    saveMessageToHistory(sessionId, null, {
+    saveMessageToHistory(sessionId, userId, {
       text: msg.text,
       role: msg.sender,
       timestamp: msg.timestamp,
     }).catch(err => {
       console.error('Failed to save message to backend:', err);
     });
-  }, [sessionId]);
+  }, [sessionId, userId]);
 
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -265,7 +274,7 @@ export const Edubot: React.FC = () => {
 
   // Load all chat sessions when history tab is opened
   const loadChatSessions = useCallback(() => {
-    fetchAllSessions(null)
+    fetchAllSessions(userId)
       .then(data => {
         if (data.sessions) {
           setChatSessions(data.sessions.map(mapSessionToHistoryTemplate));
@@ -274,7 +283,7 @@ export const Edubot: React.FC = () => {
       .catch(err => {
         console.error('Failed to fetch chat sessions:', err);
       });
-  }, []);
+  }, [userId]);
 
   // Delete chat session handler
   const handleDeleteChat = useCallback((chatId: string) => {
