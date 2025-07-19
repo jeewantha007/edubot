@@ -287,16 +287,29 @@ export const Edubot: React.FC = () => {
       });
   }, [userId]);
 
+  // Update handleNewChat to generate a new sessionId and clear messages
+  const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const handleNewChat = useCallback(() => {
+    const newSessionId = generateSessionId();
+    setSessionId(newSessionId);
+    localStorage.setItem('edubot_session_id', newSessionId);
+    setMessages([]);
+    setCurrentChatId(newSessionId);
+  }, []);
+
   // Delete chat session handler
   const handleDeleteChat = useCallback((chatId: string) => {
     deleteChatSession(chatId)
       .then(() => {
         loadChatSessions();
+        if (chatId === currentChatId) {
+          handleNewChat();
+        }
       })
       .catch(err => {
         console.error('Failed to delete chat session:', err);
       });
-  }, [loadChatSessions]);
+  }, [loadChatSessions, currentChatId, handleNewChat]);
 
   // Rename chat session handler
   const handleRenameChat = useCallback((chatId: string, newTitle: string) => {
@@ -356,16 +369,6 @@ export const Edubot: React.FC = () => {
       loadChatSessions();
     }
   }, [isHistoryOpen, loadChatSessions]);
-
-  // Update handleNewChat to generate a new sessionId and clear messages
-  const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const handleNewChat = () => {
-    const newSessionId = generateSessionId();
-    setSessionId(newSessionId);
-    localStorage.setItem('edubot_session_id', newSessionId);
-    setMessages([]);
-    setCurrentChatId(newSessionId);
-  };
 
   // Update handleSelectChat to set sessionId and currentChatId
   const handleSelectChat = (chatId: string) => {

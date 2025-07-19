@@ -371,43 +371,41 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
                         </div>
                       </div>
                       {/* Action buttons (show on hover, except for active chat) */}
-                      {currentChatId !== session.id && (
-                        <div className="relative">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800"
-                            onClick={e => {
-                              e.stopPropagation();
-                              setOpenDropdown(openDropdown === session.id ? null : session.id);
-                            }}
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                          {openDropdown === session.id && (
-                            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
-                              <button
-                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
-                                onClick={e => { e.stopPropagation(); handleRename(session.id); }}
-                              >
-                                <Edit3 className="w-4 h-4 mr-2" /> Rename
-                              </button>
-                              <button
-                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
-                                onClick={e => { e.stopPropagation(); handleDelete(session.id); }}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2 text-red-500" /> Delete
-                              </button>
-                              <button
-                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
-                                onClick={e => { e.stopPropagation(); handleDownload(session.id); }}
-                              >
-                                <Download className="w-4 h-4 mr-2" /> Download
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      <div className="relative">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setOpenDropdown(openDropdown === session.id ? null : session.id);
+                          }}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                        {openDropdown === session.id && (
+                          <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                            <button
+                              className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
+                              onClick={e => { e.stopPropagation(); handleRename(session.id); }}
+                            >
+                              <Edit3 className="w-4 h-4 mr-2" /> Rename
+                            </button>
+                            <button
+                              className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
+                              onClick={e => { e.stopPropagation(); handleDelete(session.id); }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2 text-red-500" /> Delete
+                            </button>
+                            <button
+                              className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
+                              onClick={e => { e.stopPropagation(); handleDownload(session.id); }}
+                            >
+                              <Download className="w-4 h-4 mr-2" /> Download
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <p className="text-xs text-slate-600 dark:text-gray-300 line-clamp-2 mb-3 leading-relaxed">
