@@ -9,6 +9,7 @@ const messageSchema = new mongoose.Schema({
 const chatSessionSchema = new mongoose.Schema({
   sessionId: { type: String, required: true, unique: true },
   userId: { type: String }, // optional, for future use
+  title: { type: String }, // add this line for chat session title
   messages: [messageSchema],
   mcqState: { type: Object }, // optional, for MCQ progress
   createdAt: { type: Date, default: Date.now }

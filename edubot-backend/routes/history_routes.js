@@ -11,4 +11,7 @@ router.get('/history', historyController.getHistory);
 // DELETE /api/history/:id - Delete a chat session by id
 router.delete('/history/:id', historyController.deleteHistory);
 
+// PATCH /api/history/:id - Rename a chat session's title/topic
+router.patch('/history/:id', historyController.updateHistoryTitle);
+
 module.exports = router; 

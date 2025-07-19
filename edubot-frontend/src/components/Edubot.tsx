@@ -5,7 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
-import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession } from '@/service/chatService';
+import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession, renameChatSession } from '@/service/chatService';
 import { getUserIdFromToken } from '@/lib/utils';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
@@ -266,7 +266,7 @@ export const Edubot: React.FC = () => {
     const lastMsg = session.messages[session.messages.length - 1];
     return {
       id: session.sessionId,
-      title: session.messages[0]?.text?.slice(0, 30) || 'Untitled Chat',
+      title: session.title || session.messages[0]?.text?.slice(0, 30) || 'Untitled Chat',
       preview: lastMsg?.text?.slice(0, 50) || '',
       timestamp: lastMsg?.timestamp || session.createdAt,
       messageCount: session.messages.length,
@@ -295,6 +295,17 @@ export const Edubot: React.FC = () => {
       })
       .catch(err => {
         console.error('Failed to delete chat session:', err);
+      });
+  }, [loadChatSessions]);
+
+  // Rename chat session handler
+  const handleRenameChat = useCallback((chatId: string, newTitle: string) => {
+    renameChatSession(chatId, newTitle)
+      .then(() => {
+        loadChatSessions();
+      })
+      .catch(err => {
+        console.error('Failed to rename chat session:', err);
       });
   }, [loadChatSessions]);
 
@@ -375,6 +386,7 @@ export const Edubot: React.FC = () => {
         chatSessions={chatSessions}
         onDeleteChat={handleDeleteChat}
         onDownloadChat={handleDownloadChat}
+        onRenameChat={handleRenameChat}
       />
       
       <div className="flex flex-col flex-1 min-w-0">

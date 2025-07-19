@@ -52,3 +52,12 @@ export async function deleteChatSession(id: string) {
   });
   return await response.json();
 }
+
+export async function renameChatSession(id: string, title: string) {
+  const response = await fetch(`${API_URL}/api/history/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  });
+  return await response.json();
+}

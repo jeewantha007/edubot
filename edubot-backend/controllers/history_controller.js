@@ -67,4 +67,32 @@ exports.deleteHistory = async (req, res) => {
     console.error('Error deleting chat session:', error);
     res.status(500).json({ error: 'Failed to delete chat session.' });
   }
+};
+
+// PATCH /api/history/:id - Rename a chat session's title/topic by _id or sessionId
+exports.updateHistoryTitle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+    if (!id || !title) {
+      return res.status(400).json({ error: 'id and title are required.' });
+    }
+    let result;
+    // Only try _id if id is a valid ObjectId and matches the 24-char hex format
+    if (mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id) {
+      result = await ChatSession.updateOne({ _id: id }, { $set: { title } });
+      if (result.matchedCount > 0) {
+        return res.json({ success: true });
+      }
+    }
+    // Otherwise, try by sessionId
+    result = await ChatSession.updateOne({ sessionId: id }, { $set: { title } });
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Session not found.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error renaming chat session:', error);
+    res.status(500).json({ error: 'Failed to rename chat session.' });
+  }
 }; 
