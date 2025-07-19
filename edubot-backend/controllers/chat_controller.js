@@ -121,12 +121,71 @@ exports.handleChat = async (req, res) => {
     session = new ChatSession({ sessionId, messages: [] });
   }
 
+  // Universal: If user asks for explanation and last bot message was a question, explain it
+  if (isAskForExplanation(message, language)) {
+    // Find the last bot message that looks like a question
+    const lastBotMsg = [...session.messages].reverse().find(m => m.role === 'bot' && /\?$/.test(m.text.trim()));
+    if (lastBotMsg) {
+      let explainPrompt = '';
+      if (language === 'sinhala') {
+        explainPrompt = `මෙම ප්‍රශ්නයට පිළිතුර සහ විස්තරයක් දෙන්න: ${lastBotMsg.text}`;
+      } else if (language === 'tamil') {
+        explainPrompt = `இந்தக் கேள்விக்கு பதில் மற்றும் விளக்கத்தை வழங்கவும்: ${lastBotMsg.text}`;
+      } else {
+        explainPrompt = `Explain the answer to this question for a Sri Lankan A/L Political Science student: ${lastBotMsg.text}`;
+      }
+      session.messages.push({ role: "user", text: message, timestamp: new Date() });
+      const aiMessages = [
+        { role: "system", content: explainPrompt },
+        ...session.messages.slice(-5).map(m => ({ role: m.role, content: m.text }))
+      ];
+      const response = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: "anthropic/claude-3-haiku",
+          max_tokens: 1000,
+          messages: aiMessages,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
+      session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
+      await session.save();
+      return res.json({ reply });
+    }
+    // If no last question found, fall through to normal chat
+  }
+
   // --- MCQ PRACTICE MODE ---
   const isMCQRequest = checkIfMCQRequest(message, language);
   const langKey = getLanguageKey(language);
 
+  // Detect quick action intent (learn, random, help, etc.)
+  function detectQuickAction(message, language) {
+    const msg = message.trim().toLowerCase();
+    // English
+    if (["learn a topic", "i want to learn a topic", "learn", "teach me", "teach a topic"].some(k => msg.includes(k))) return "learn";
+    if (["random question", "give me a random question", "random", "surprise me"].some(k => msg.includes(k))) return "random";
+    if (["help", "how can you help", "what can you do"].some(k => msg.includes(k))) return "help";
+    // Sinhala
+    if (["මාතෘකාවක් ඉගෙන ගන්න", "මාතෘකාවක් ඉගෙන ගන්න ඕනේ", "ඉගෙන ගන්න", "මාතෘකාවක් උගන්නන්න"].some(k => msg.includes(k))) return "learn";
+    if (["අහම්බෙන් ප්‍රශ්නයක්", "අහම්බෙන්", "අහම්බෙන් ප්‍රශ්නයක් දෙන්න"].some(k => msg.includes(k))) return "random";
+    if (["උදව්", "කොහොමද උදව් කරන්න පුළුවන්"].some(k => msg.includes(k))) return "help";
+    // Tamil
+    if (["ஒரு தலைப்பைக் கற்றுக்கொள்ளுங்கள்", "ஒரு தலைப்பைக் கற்க விரும்புகிறேன்", "கற்றுக்கொள்ளுங்கள்", "தலைப்பைக் கற்றுக்கொள்ளுங்கள்"].some(k => msg.includes(k))) return "learn";
+    if (["சீரற்ற கேள்வி", "சீரற்ற", "சீரற்ற கேள்வி கொடுங்கள்"].some(k => msg.includes(k))) return "random";
+    if (["உதவி", "நீங்கள் எனக்கு எவ்வாறு உதவ முடியும்"].some(k => msg.includes(k))) return "help";
+    return null;
+  }
+
   // Only enter MCQ mode if the user explicitly requests MCQs or is already in MCQ mode
   if (isMCQRequest || (session.mcqState && session.mcqState.active)) {
+    session.mode = "mcq";
     // If user wants to stop MCQ mode
     if (isStopMCQRequest(message, language)) {
       session.mcqState = undefined;
@@ -231,6 +290,103 @@ exports.handleChat = async (req, res) => {
     }
   }
 
+  // Handle learn/random/help quick actions
+  const quickAction = detectQuickAction(message, language);
+  if (quickAction === "learn") {
+    session.mode = "learn";
+    // Optionally extract topic from message (simple heuristic)
+    let topic = null;
+    const topicMatch = message.match(/about (.+)$/i) || message.match(/ගැන (.+)$/i) || message.match(/பற்றி (.+)$/i);
+    if (topicMatch) topic = topicMatch[1].trim();
+    session.currentTopic = topic || null;
+    session.messages.push({ role: "user", text: message, timestamp: new Date() });
+    // System prompt for learning a topic
+    let learnPrompt = "";
+    if (language === "sinhala") {
+      learnPrompt = `ඔබ දේශපාලන විද්‍යා ගුරුවරයෙකි. ${topic ? `මෙම මාතෘකාව ගැන පැහැදිලිව, සරලව, සිංහලෙන් උගන්නන්න: ${topic}` : "මාතෘකාවක් ඉගෙන ගැනීමට උදව් කරන්න."}`;
+    } else if (language === "tamil") {
+      learnPrompt = `நீங்கள் அரசியல் அறிவியல் ஆசிரியர். ${topic ? `இந்த தலைப்பை தெளிவாகவும் எளிமையாகவும் தமிழில் கற்றுக்கொள்ள உதவுங்கள்: ${topic}` : "ஒரு தலைப்பைக் கற்றுக்கொள்ள உதவுங்கள்."}`;
+    } else {
+      learnPrompt = `You are a Political Science teacher. ${topic ? `Teach this topic clearly and simply in English: ${topic}` : "Help the student learn a topic."}`;
+    }
+    // Use only the last 5 messages for context
+    const aiMessages = [
+      { role: "system", content: learnPrompt },
+      ...session.messages.slice(-5).map(m => ({ role: m.role, content: m.text }))
+    ];
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: "anthropic/claude-3-haiku",
+        max_tokens: 1000,
+        messages: aiMessages,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
+    session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
+    await session.save();
+    return res.json({ reply });
+  }
+  if (quickAction === "random") {
+    session.mode = "random";
+    // Prompt for a random syllabus-appropriate question
+    let randomPrompt = "";
+    if (language === "sinhala") {
+      randomPrompt = "ශ්‍රී ලංකා A/L දේශපාලන විද්‍යා විෂය නිර්දේශය අනුව අහම්බෙන් ප්‍රශ්නයක් (MCQ නොව) හෝ කෙටි ප්‍රශ්නයක් දෙන්න.";
+    } else if (language === "tamil") {
+      randomPrompt = "இலங்கை A/L அரசியல் அறிவியல் பாடத்திட்டத்திலிருந்து சீரற்ற (MCQ அல்லாத) கேள்வி அல்லது குறுகிய கேள்வி ஒன்றை வழங்கவும்.";
+    } else {
+      randomPrompt = "Give a random, syllabus-appropriate question (not MCQ) or short question from Sri Lankan A/L Political Science.";
+    }
+    session.messages.push({ role: "user", text: message, timestamp: new Date() });
+    const aiMessages = [
+      { role: "system", content: randomPrompt },
+      ...session.messages.slice(-5).map(m => ({ role: m.role, content: m.text }))
+    ];
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: "anthropic/claude-3-haiku",
+        max_tokens: 1000,
+        messages: aiMessages,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
+    session.lastRandomQuestion = reply;
+    session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
+    await session.save();
+    return res.json({ reply });
+  }
+  if (quickAction === "help") {
+    session.mode = "general";
+    session.messages.push({ role: "user", text: message, timestamp: new Date() });
+    let helpMsg = "";
+    if (language === "sinhala") {
+      helpMsg = "මම ඔබට දේශපාලන විද්‍යා අධ්‍යයනය සඳහා උදව් කරන Edubot chatbot එකක්. ඔබට මාතෘකා ඉගෙන ගැනීම, අහම්බෙන් ප්‍රශ්න, MCQ අභ්‍යාස, සහ තවත් බොහෝ දේ කළ හැක.";
+    } else if (language === "tamil") {
+      helpMsg = "நான் உங்களுக்கு அரசியல் அறிவியல் கற்றலில் உதவும் Edubot chatbot. தலைப்புகள், சீரற்ற கேள்விகள், MCQ பயிற்சி மற்றும் பலவற்றை செய்யலாம்.";
+    } else {
+      helpMsg = "I'm Edubot, a chatbot to help you learn A/L Political Science. You can learn topics, get random questions, practice MCQs, and more.";
+    }
+    session.messages.push({ role: "bot", text: helpMsg, timestamp: new Date() });
+    await session.save();
+    return res.json({ reply: helpMsg });
+  }
+  // If not a quick action, default to general mode
+  session.mode = "general";
+
   // --- GENERAL CHAT MODE ---
   // Read guidance from file
   let guidance = "";
@@ -243,11 +399,11 @@ exports.handleChat = async (req, res) => {
   // Set system prompt based on selected language
   let systemPrompt = "";
   if (language === "sinhala") {
-    systemPrompt = `${guidance}\n\nAct like a Sinhala Political Science teacher for A/L students in Sri Lanka. Answer in simple Sinhala.`;
+    systemPrompt = `${guidance}\n\nAct like a Sinhala Political Science teacher for A/L students in Sri Lanka. Answer in simple Sinhala. Do not use Tamil greetings or phrases. Only use Sinhala as appropriate. Always reply ONLY in Sinhala. Never switch or mix languages.`;
   } else if (language === "tamil") {
-    systemPrompt = `${guidance}\n\nAct like a Tamil Political Science teacher for A/L students in Sri Lanka. Answer in simple Tamil.`;
+    systemPrompt = `${guidance}\n\nAct like a Tamil Political Science teacher for A/L students in Sri Lanka. Answer in simple Tamil. Always reply ONLY in Tamil. Never switch or mix languages.`;
   } else {
-    systemPrompt = `${guidance}\n\nYou are a helpful Political Science teacher for Sri Lankan A/L students. \nAlways format your answers in clear, structured Markdown, following these rules:\n- Start with a short summary sentence.\n- Then, list the main points using bullet points or numbers.\n- Bold important terms (e.g., **Democracy**).\n- Use short paragraphs (2-3 sentences max per paragraph).\n- If possible, provide a relevant example (preferably related to Sri Lanka).\n- End with a brief recap to reinforce the main idea.\n- Do NOT write large text blocks; break up information for easy reading.\n- Use Markdown for formatting (bold, lists, etc.).`;
+    systemPrompt = `${guidance}\n\nYou are a helpful Political Science teacher for Sri Lankan A/L students. \nDo not use Tamil greetings or phrases. Only use English as appropriate. Always reply ONLY in English. Never switch or mix languages.\nAlways format your answers in clear, structured Markdown, following these rules:\n- Start with a short summary sentence.\n- Then, list the main points using bullet points or numbers.\n- Bold important terms (e.g., **Democracy**).\n- Use short paragraphs (2-3 sentences max per paragraph).\n- If possible, provide a relevant example (preferably related to Sri Lanka).\n- End with a brief recap to reinforce the main idea.\n- Do NOT write large text blocks; break up information for easy reading.\n- Use Markdown for formatting (bold, lists, etc.).`;
   }
 
   try {
@@ -325,6 +481,18 @@ function checkIfMCQRequest(message, language) {
   }
   
   return keywords.some(keyword => messageLower.includes(keyword));
+}
+
+// Helper: Detect if user is asking for an explanation or answer
+function isAskForExplanation(message, language) {
+  const msg = message.trim().toLowerCase();
+  // English
+  if (["i don't know", "can you explain", "what is the answer", "explain", "answer please", "help", "tell me the answer", "what's the answer"].some(k => msg.includes(k))) return true;
+  // Sinhala
+  if (["මට නොදන්නා", "විස්තර කරන්න", "පිළිතුර කුමක්ද", "ඉඟියක් දෙන්න", "ඉඟියක්", "ඉඟිය", "ඉඟියක් ලබා දෙන්න", "පිළිතුර කියන්න"].some(k => msg.includes(k))) return true;
+  // Tamil
+  if (["எனக்குத் தெரியவில்லை", "விளக்கவும்", "பதில் என்ன", "உதவி", "பதிலைச் சொல்லவும்", "பதிலை கூறவும்"].some(k => msg.includes(k))) return true;
+  return false;
 }
 
 // Export the function for testing
