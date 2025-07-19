@@ -24,3 +24,17 @@ export async function sendMessage(message: string, language: string, sessionId: 
   });
   return await response.json();
 }
+
+export async function saveMessageToHistory(sessionId: string, userId: string | null, message: { text: string, role: 'user' | 'bot', timestamp: Date }) {
+  const response = await fetch(`${API_URL}/api/history`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, userId, message }),
+  });
+  return await response.json();
+}
+
+export async function fetchChatHistory(sessionId: string) {
+  const response = await fetch(`${API_URL}/api/history?sessionId=${encodeURIComponent(sessionId)}`);
+  return await response.json();
+}

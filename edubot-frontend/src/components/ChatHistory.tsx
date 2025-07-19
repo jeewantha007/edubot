@@ -32,50 +32,8 @@ interface ChatHistoryProps {
   onNewChat: () => void;
   onSelectChat?: (chatId: string) => void;
   currentChatId?: string;
+  chatSessions?: ChatSession[]; // Now passed as a prop
 }
-
-const mockChatSessions: ChatSession[] = [
-  {
-    id: '1',
-    title: 'Constitutional Law Basics',
-    preview: 'What is the main function of the executive branch...',
-    timestamp: new Date().toISOString(),
-    messageCount: 12,
-    category: 'learn'
-  },
-  {
-    id: '2',
-    title: 'MCQ Practice Session',
-    preview: 'Perfect! Let\'s practice with some MCQs...',
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    messageCount: 8,
-    category: 'practice'
-  },
-  {
-    id: '3',
-    title: 'Political Theory Discussion',
-    preview: 'Can you explain the difference between federal...',
-    timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-    messageCount: 15,
-    category: 'learn'
-  },
-  {
-    id: '4',
-    title: 'Help with Exam Prep',
-    preview: 'I\'m here to help you succeed in A/L Political...',
-    timestamp: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-    messageCount: 6,
-    category: 'help'
-  },
-  {
-    id: '5',
-    title: 'International Relations',
-    preview: 'Let\'s explore Political Science topics...',
-    timestamp: new Date(Date.now() - 604800000).toISOString(), // 1 week ago
-    messageCount: 20,
-    category: 'learn'
-  }
-];
 
 const getCategoryIcon = (category: ChatSession['category']) => {
   switch (category) {
@@ -124,9 +82,9 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   onClose,
   onNewChat,
   onSelectChat,
-  currentChatId = '1'
+  currentChatId = '1',
+  chatSessions = []
 }) => {
-  const [chatSessions] = useState<ChatSession[]>(mockChatSessions);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredSessions = chatSessions.filter(session =>

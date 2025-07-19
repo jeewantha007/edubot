@@ -5,7 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
-import { sendMessage } from '@/service/chatService';
+import { sendMessage, saveMessageToHistory, fetchChatHistory } from '@/service/chatService';
 
 interface Message {
   id: string;
@@ -35,6 +35,43 @@ export const Edubot: React.FC = () => {
     setSessionId(sid);
     console.log('Edubot sessionId:', sid); // Debug log
   }, []);
+
+  // Fetch chat history from backend when sessionId is set
+  useEffect(() => {
+    if (sessionId) {
+      fetchChatHistory(sessionId)
+        .then(data => {
+          if (data.sessions && data.sessions.length > 0) {
+            // Flatten all messages from the session (should only be one session per sessionId)
+            const session = data.sessions[0];
+            if (session && Array.isArray(session.messages)) {
+              setMessages(session.messages.map((msg: any, idx: number) => ({
+                id: msg._id || `msg_${idx}`,
+                text: msg.text,
+                sender: msg.role,
+                timestamp: new Date(msg.timestamp),
+                rating: msg.rating,
+              })));
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch chat history:', err);
+        });
+    }
+  }, [sessionId]);
+
+  // Helper to save message to backend
+  const persistMessage = useCallback((msg: Message) => {
+    if (!sessionId) return;
+    saveMessageToHistory(sessionId, null, {
+      text: msg.text,
+      role: msg.sender,
+      timestamp: msg.timestamp,
+    }).catch(err => {
+      console.error('Failed to save message to backend:', err);
+    });
+  }, [sessionId]);
 
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -88,8 +125,9 @@ export const Edubot: React.FC = () => {
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, newMessage]);
+    persistMessage(newMessage);
     return newMessage;
-  }, []);
+  }, [persistMessage]);
 
   // Helper to map frontend language code to backend
   const mapLanguage = (lang: string) => {

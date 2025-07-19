@@ -17,8 +17,10 @@ app.use(express.json());
 
 const chatRoutes = require('./routes/chat_routes');
 const userRoutes = require('./routes/user_routes');
+const historyRoutes = require('./routes/history_routes');
 app.use('/api', chatRoutes);
 app.use('/api', userRoutes);
+app.use('/api', historyRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
