@@ -5,6 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
+import { sendMessage } from '@/service/chatService';
 
 interface Message {
   id: string;
@@ -20,6 +21,7 @@ export const Edubot: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [currentChatId, setCurrentChatId] = useState('1');
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const { toast } = useToast();
 
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -77,16 +79,29 @@ export const Edubot: React.FC = () => {
     return newMessage;
   }, []);
 
-  const handleSendMessage = useCallback((text: string) => {
+  // Helper to map frontend language code to backend
+  const mapLanguage = (lang: string) => {
+    if (lang === 'si') return 'sinhala';
+    if (lang === 'ta') return 'tamil';
+    return 'english';
+  };
+
+  const handleSendMessage = useCallback(async (text: string) => {
+    setShowQuickActions(false);
     const userMessage = addMessage(text, 'user');
-    
-    simulateTyping(() => {
-      const botResponse = getBotResponse(text);
-      addMessage(botResponse, 'bot');
-    });
+    setIsTyping(true);
+    try {
+      const response = await sendMessage(text, mapLanguage(currentLanguage));
+      addMessage(response.reply, 'bot');
+    } catch (error) {
+      addMessage('Sorry, there was an error connecting to the server.', 'bot');
+    } finally {
+      setIsTyping(false);
+    }
   }, [addMessage, currentLanguage]);
 
   const handleQuickAction = useCallback((action: string) => {
+    setShowQuickActions(false);
     const actionTexts = {
       en: {
         learn: "I want to learn a topic",
@@ -150,6 +165,7 @@ export const Edubot: React.FC = () => {
     setMessages([]);
     setCurrentChatId(`chat_${Date.now()}`);
     setIsHistoryOpen(false);
+    setShowQuickActions(true);
   };
 
   const handleSelectChat = (chatId: string) => {
@@ -183,10 +199,13 @@ export const Edubot: React.FC = () => {
           language={currentLanguage}
         />
         
-        <QuickActions 
-          onActionClick={handleQuickAction}
-          language={currentLanguage}
-        />
+        {/* Only show QuickActions if showQuickActions is true and there are no messages */}
+        {showQuickActions && messages.length === 0 && (
+          <QuickActions 
+            onActionClick={handleQuickAction}
+            language={currentLanguage}
+          />
+        )}
         
         <ChatInput 
           onSendMessage={handleSendMessage}

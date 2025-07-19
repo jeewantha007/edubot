@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Mic } from 'lucide-react';
@@ -15,6 +15,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   disabled = false 
 }) => {
   const [message, setMessage] = useState('');
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const getPlaceholderText = () => {
     const placeholders = {
@@ -39,6 +41,42 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  // Voice input logic (English only)
+  const handleMicClick = () => {
+    if (language !== 'en' || disabled) return;
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setMessage(''); // Clear input after sending
+      setListening(false);
+      if (transcript.trim()) {
+        onSendMessage(transcript.trim());
+      }
+    };
+    recognition.onerror = () => {
+      setListening(false);
+    };
+    recognition.onend = () => {
+      setListening(false);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
+
   return (
     <div className="p-4 bg-background border-t border-border">
       <div className="flex items-center gap-2 max-w-4xl mx-auto">
@@ -55,9 +93,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             variant="ghost"
             size="sm"
             className="absolute right-1 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-full hover:bg-muted-foreground/10"
-            disabled={disabled}
+            disabled={disabled || language !== 'en'}
+            onClick={handleMicClick}
           >
-            <Mic className="w-4 h-4 text-muted-foreground" />
+            <Mic className={`w-4 h-4 text-muted-foreground ${listening ? 'animate-pulse text-primary' : ''}`} />
           </Button>
         </div>
         
