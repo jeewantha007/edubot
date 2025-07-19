@@ -1,4 +1,5 @@
 const ChatSession = require('../db/chatSession');
+const mongoose = require('mongoose');
 
 // POST /api/history - Save a message to a session
 exports.saveMessage = async (req, res) => {
@@ -39,5 +40,31 @@ exports.getHistory = async (req, res) => {
   } catch (error) {
     console.error('Error fetching history:', error);
     res.status(500).json({ error: 'Failed to fetch history.' });
+  }
+};
+
+// DELETE /api/history/:id - Delete a chat session by MongoDB _id or sessionId
+exports.deleteHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'id is required.' });
+    }
+    let result;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      result = await ChatSession.deleteOne({ _id: id });
+      if (result.deletedCount > 0) {
+        return res.json({ success: true });
+      }
+    }
+    // If not a valid ObjectId or not found, try by sessionId
+    result = await ChatSession.deleteOne({ sessionId: id });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Session not found.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting chat session:', error);
+    res.status(500).json({ error: 'Failed to delete chat session.' });
   }
 }; 

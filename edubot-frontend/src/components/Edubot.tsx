@@ -5,7 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
-import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions } from '@/service/chatService';
+import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession } from '@/service/chatService';
 
 interface Message {
   id: string;
@@ -276,6 +276,17 @@ export const Edubot: React.FC = () => {
       });
   }, []);
 
+  // Delete chat session handler
+  const handleDeleteChat = useCallback((chatId: string) => {
+    deleteChatSession(chatId)
+      .then(() => {
+        loadChatSessions();
+      })
+      .catch(err => {
+        console.error('Failed to delete chat session:', err);
+      });
+  }, [loadChatSessions]);
+
   useEffect(() => {
     if (isHistoryOpen) {
       loadChatSessions();
@@ -309,6 +320,7 @@ export const Edubot: React.FC = () => {
         onSelectChat={handleSelectChat}
         currentChatId={currentChatId}
         chatSessions={chatSessions}
+        onDeleteChat={handleDeleteChat}
       />
       
       <div className="flex flex-col flex-1 min-w-0">

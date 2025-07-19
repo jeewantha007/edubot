@@ -13,7 +13,12 @@ import {
   Brain,
   Search,
   MoreHorizontal,
-  Archive
+  Archive,
+  Trash2,
+  Edit3,
+  Download,
+  X,
+  Check
 } from 'lucide-react';
 
 
@@ -33,6 +38,9 @@ interface ChatHistoryProps {
   onSelectChat?: (chatId: string) => void;
   currentChatId?: string;
   chatSessions?: ChatSession[];
+  onDeleteChat?: (chatId: string) => void;
+  onRenameChat?: (chatId: string, newTitle: string) => void;
+  onDownloadChat?: (chatId: string) => void;
 }
 
 const getCategoryIcon = (category: ChatSession['category']) => {
@@ -167,14 +175,56 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   onNewChat,
   onSelectChat,
   currentChatId = '1',
-  chatSessions = sampleChatSessions
+  chatSessions = [],
+  onDeleteChat,
+  onRenameChat,
+  onDownloadChat
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [editingChat, setEditingChat] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const filteredSessions = chatSessions.filter(session =>
     session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     session.preview.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleRename = (chatId: string) => {
+    const session = chatSessions.find(s => s.id === chatId);
+    if (session) {
+      setEditTitle(session.title);
+      setEditingChat(chatId);
+      setOpenDropdown(null);
+    }
+  };
+
+  const handleRenameSubmit = (chatId: string) => {
+    if (editTitle.trim() && onRenameChat) {
+      onRenameChat(chatId, editTitle.trim());
+    }
+    setEditingChat(null);
+    setEditTitle('');
+  };
+
+  const handleRenameCancel = () => {
+    setEditingChat(null);
+    setEditTitle('');
+  };
+
+  const handleDelete = (chatId: string) => {
+    if (onDeleteChat) {
+      onDeleteChat(chatId);
+    }
+    setOpenDropdown(null);
+  };
+
+  const handleDownload = (chatId: string) => {
+    if (onDownloadChat) {
+      onDownloadChat(chatId);
+    }
+    setOpenDropdown(null);
+  };
 
   if (!isOpen) return null;
 
@@ -272,24 +322,92 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
                           {getCategoryIcon(session.category)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-slate-800 dark:text-white truncate text-sm leading-tight">
-                            {session.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-gray-400">
-                              <Clock className="w-3 h-3" />
-                              {formatTimestamp(session.timestamp)}
+                          {editingChat === session.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                className="flex-1 text-sm font-semibold bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-600 rounded px-2 py-1 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleRenameSubmit(session.id);
+                                  } else if (e.key === 'Escape') {
+                                    handleRenameCancel();
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRenameSubmit(session.id)}
+                                className="h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/50"
+                              >
+                                <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRenameCancel}
+                                className="h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/50"
+                              >
+                                <X className="w-3 h-3 text-red-600 dark:text-red-400" />
+                              </Button>
                             </div>
-                          </div>
+                          ) : (
+                            <>
+                              <h3 className="font-semibold text-slate-800 dark:text-white truncate text-sm leading-tight">
+                                {session.title}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-gray-400">
+                                  <Clock className="w-3 h-3" />
+                                  {formatTimestamp(session.timestamp)}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
+                      {/* Action buttons (show on hover, except for active chat) */}
+                      {currentChatId !== session.id && (
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setOpenDropdown(openDropdown === session.id ? null : session.id);
+                            }}
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                          {openDropdown === session.id && (
+                            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                              <button
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
+                                onClick={e => { e.stopPropagation(); handleRename(session.id); }}
+                              >
+                                <Edit3 className="w-4 h-4 mr-2" /> Rename
+                              </button>
+                              <button
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
+                                onClick={e => { e.stopPropagation(); handleDelete(session.id); }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2 text-red-500" /> Delete
+                              </button>
+                              <button
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-gray-800"
+                                onClick={e => { e.stopPropagation(); handleDownload(session.id); }}
+                              >
+                                <Download className="w-4 h-4 mr-2" /> Download
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     
                     <p className="text-xs text-slate-600 dark:text-gray-300 line-clamp-2 mb-3 leading-relaxed">
