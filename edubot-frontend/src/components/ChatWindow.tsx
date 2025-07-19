@@ -16,6 +16,7 @@ interface ChatWindowProps {
   isTyping?: boolean;
   language: string;
   onEditMessage?: (messageId: string, newText: string) => void;
+  children?: React.ReactNode; // For QuickActions component
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ 
@@ -23,7 +24,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onRate, 
   isTyping, 
   language, 
-  onEditMessage 
+  onEditMessage,
+  children 
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -67,12 +69,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const texts = getWelcomeTexts();
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-background via-background to-muted/10 dark:from-background dark:via-background dark:to-muted/5">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className={`flex-1 h-full min-h-0 flex flex-col bg-gradient-to-b from-background via-background to-muted/10 dark:from-background dark:via-background dark:to-muted/5`}>
+      <div className={`flex-1 max-w-4xl mx-auto w-full flex flex-col ${messages.length === 0 ? 'justify-center' : ''} ${messages.length > 0 ? 'px-4 py-6' : 'py-6'}`} style={{ minHeight: '0' }}>
         {messages.length === 0 ? (
-          <div className="text-center py-8 sm:py-16 space-y-8">
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6 max-w-2xl mx-auto px-4">
             {/* Hero Section */}
-            <div className="relative">
+            <div className="relative flex flex-col items-center justify-center">
               {/* Floating background elements */}
               <div className="absolute -top-4 -left-4 w-24 h-24 bg-gradient-to-br from-blue-200/20 to-purple-200/20 dark:from-blue-800/20 dark:to-purple-800/20 rounded-full blur-xl animate-pulse"></div>
               <div className="absolute -top-2 -right-6 w-16 h-16 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 dark:from-emerald-800/20 dark:to-teal-800/20 rounded-full blur-lg animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -85,25 +87,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
                 </div>
               </div>
-
+              
               {/* Welcome text */}
-              <div className="space-y-3">
+              <div className="space-y-3 text-center mb-6">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                   {texts.greeting[language as keyof typeof texts.greeting] || texts.greeting.en}
                 </h1>
                 <p className="text-base sm:text-lg text-primary font-semibold">
                   {texts.subtitle[language as keyof typeof texts.subtitle] || texts.subtitle.en}
                 </p>
-                <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
                   {texts.description[language as keyof typeof texts.description] || texts.description.en}
                 </p>
               </div>
             </div>
 
-
+            {/* QuickActions Container */}
+            {children && (
+              <div className="w-full max-w-lg mx-auto">
+                {children}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6 flex-1">
             {messages.map((message, index) => (
               <div 
                 key={message.id}
@@ -117,30 +124,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 />
               </div>
             ))}
-          </div>
-        )}
-        
-        {isTyping && (
-          <div className="flex justify-start mb-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-            <div className="max-w-[85%] md:max-w-[70%]">
-              <div className="bg-card/80 dark:bg-card/60 backdrop-blur-sm border border-border/50 dark:border-border/30 text-card-foreground p-4 rounded-2xl rounded-bl-sm shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground/90">
-                      {getTypingText()}
-                    </span>
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-primary/80 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            
+            {isTyping && (
+              <div className="flex justify-start animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                <div className="max-w-[85%] md:max-w-[70%]">
+                  <div className="bg-card/80 dark:bg-card/60 backdrop-blur-sm border border-border/50 dark:border-border/30 text-card-foreground p-4 rounded-2xl rounded-bl-sm shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground/90">
+                          {getTypingText()}
+                        </span>
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-primary/80 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
         

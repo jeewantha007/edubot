@@ -279,7 +279,10 @@ export const Edubot: React.FC = () => {
     fetchAllSessions(userId)
       .then(data => {
         if (data.sessions) {
-          setChatSessions(data.sessions.map(mapSessionToHistoryTemplate));
+          const mapped = data.sessions.map(mapSessionToHistoryTemplate);
+          // Sort by most recent (timestamp or createdAt) first
+          mapped.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          setChatSessions(mapped);
         }
       })
       .catch(err => {

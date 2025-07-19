@@ -115,16 +115,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   ];
 
   return (
-    <div className="p-4 sm:p-6 bg-gradient-to-br from-background via-background/95 to-muted/20">
+    <div className="p-2 sm:p-3 bg-gradient-to-br from-background via-background/95 to-muted/20">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+        <div className="text-center mb-3">
+          <h3 className="text-sm sm:text-base font-semibold text-foreground mb-1">
             {language === 'en' ? 'Quick Actions' : 
              language === 'si' ? 'ඉක්මන් ක්‍රියාමාර්ග' : 
              'விரைவு செயல்கள்'}
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
             {language === 'en' ? 'Choose how you\'d like to start learning' :
              language === 'si' ? 'ඔබ ඉගෙනීම ආරම්භ කරන්නේ කෙසේද යන්න තෝරන්න' :
              'நீங்கள் எவ்வாறு கற்றலைத் தொடங்க விரும்புகிறீர்கள் என்பதைத் தேர்ந்தெடுக்கவும்'}
@@ -132,7 +132,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         </div>
 
         {/* Action Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {actions.map((action) => {
             const IconComponent = action.icon;
             return (
@@ -140,8 +140,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                 key={action.key}
                 variant="outline"
                 className={`
-                  relative h-20 sm:h-24 p-4 
-                  flex flex-col items-center justify-center gap-2
+                  relative h-20 sm:h-24 p-2 sm:p-3
+                  flex flex-col items-center justify-center gap-1.5
                   ${action.bgColor} ${action.darkBgColor}
                   ${action.borderColor}
                   ${action.shadowColor} ${action.hoverShadow}
@@ -160,23 +160,23 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                 
                 {/* Icon with gradient background */}
                 <div className={`
-                  relative p-2 rounded-lg bg-gradient-to-br ${action.gradient}
+                  relative p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${action.gradient}
                   shadow-sm group-hover:shadow-md transition-all duration-300
-                  group-hover:scale-110
+                  group-hover:scale-110 flex-shrink-0
                 `}>
                   <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-sm" />
                 </div>
                 
-                {/* Text content */}
-                <div className="text-center space-y-0.5 relative z-10">
+                {/* Text content with consistent height */}
+                <div className="text-center min-h-[2.5rem] sm:min-h-[3rem] flex flex-col justify-center relative z-10 px-1">
                   <span className={`
-                    text-sm sm:text-base font-semibold ${action.textColor}
+                    text-xs sm:text-sm font-semibold ${action.textColor}
                     group-hover:scale-105 transition-transform duration-300
-                    leading-tight
+                    leading-tight mb-0.5 block
                   `}>
                     {getActionText(action.key)}
                   </span>
-                  <p className="text-xs text-muted-foreground/80 leading-tight">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground/80 leading-tight">
                     {getActionDescription(action.key)}
                   </p>
                 </div>
@@ -189,8 +189,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         </div>
 
         {/* Footer hint */}
-        <div className="text-center mt-4">
-          <p className="text-xs text-muted-foreground/60">
+        <div className="text-center mt-2">
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground/60 leading-tight">
             {language === 'en' ? 'Or type your question in the chat below' :
              language === 'si' ? 'හෝ පහත කතාබස් තුළ ඔබේ ප්‍රශ්නය ටයිප් කරන්න' :
              'அல்லது கீழே உள்ள அரட்டையில் உங்கள் கேள்வியை தட்டச்சு செய்யுங்கள்'}
