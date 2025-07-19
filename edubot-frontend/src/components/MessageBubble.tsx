@@ -19,6 +19,9 @@ interface MessageBubbleProps {
 
 // Enhanced response formatter utility
 const formatBotResponse = (text: string): string => {
+  if (typeof text !== 'string') {
+    return 'Sorry, I could not generate a response. Please try again later or check your credits.';
+  }
   // If already formatted with markdown, return as is
   if (text.includes('##') || text.includes('**') || text.includes('- ') || text.includes('* ')) {
     return text;

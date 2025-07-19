@@ -73,37 +73,45 @@ async function generateMCQ(language) {
     prompt = `Generate a single multiple-choice question (MCQ) for Sri Lankan A/L Political Science in the following format. Include all three languages (English, Sinhala, Tamil) as shown, separated by '---'.\n\n# Language: English\nQ1. <question in English>\nA. <option 1>\nB. <option 2>\nC. <option 3>\nD. <option 4>\nAnswer: <A/B/C/D>\nExplanation: <brief explanation in English>\n\n---\n\n# Language: Sinhala\nQ2. <question in Sinhala>\nA. <option 1>\nB. <option 2>\nC. <option 3>\nD. <option 4>\nAnswer: <A/B/C/D>\nExplanation: <brief explanation in Sinhala>\n\n---\n\n# Language: Tamil\nQ3. <question in Tamil>\nA. <option 1>\nB. <option 2>\nC. <option 3>\nD. <option 4>\nAnswer: <A/B/C/D>\nExplanation: <brief explanation in Tamil>\n`;
   }
 
-  // Use Claude or OpenRouter to generate the MCQ
-  const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model: "anthropic/claude-3-haiku",
-      max_tokens: 800,
-      messages: [
-        { role: "system", content: prompt },
-      ],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.API_KEY}`,
-        "Content-Type": "application/json",
+  try {
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: "anthropic/claude-3-haiku",
+        max_tokens: 800,
+        messages: [
+          { role: "system", content: prompt },
+        ],
       },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    let text = response.data?.choices?.[0]?.message?.content || '';
+    // Extract the relevant language block
+    const block = extractMCQBlock(text, language);
+    if (!block) {
+      console.error('AI MCQ block extraction failed. Raw response:', text);
+      return null;
     }
-  );
-  let text = response.data?.choices?.[0]?.message?.content || '';
-  // Extract the relevant language block
-  const block = extractMCQBlock(text, language);
-  if (!block) {
-    console.error('AI MCQ block extraction failed. Raw response:', text);
-    return null;
+    // Parse the block
+    const mcq = parseMCQBlock(block);
+    if (!mcq) {
+      console.error('AI MCQ block parsing failed. Block:', block);
+      return null;
+    }
+    return mcq;
+  } catch (error) {
+    if (error.response && error.response.data && error.response.data.error) {
+      console.error('OpenRouter API Error (MCQ):', error.response.data.error.message);
+    } else {
+      console.error('OpenRouter API Error (MCQ):', error.message);
+    }
+    return { error: error.response?.data?.error?.message || 'Failed to generate MCQ due to an API error.' };
   }
-  // Parse the block
-  const mcq = parseMCQBlock(block);
-  if (!mcq) {
-    console.error('AI MCQ block parsing failed. Block:', block);
-    return null;
-  }
-  return mcq;
 }
 
 // Controller for handling chat requests to Edubot
@@ -139,24 +147,32 @@ exports.handleChat = async (req, res) => {
         { role: "system", content: explainPrompt },
         ...session.messages.slice(-5).map(m => ({ role: m.role, content: m.text }))
       ];
-      const response = await axios.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          model: "anthropic/claude-3-haiku",
-          max_tokens: 1000,
-          messages: aiMessages,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_KEY}`,
-            "Content-Type": "application/json",
+      try {
+        const response = await axios.post(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            model: "anthropic/claude-3-haiku",
+            max_tokens: 1000,
+            messages: aiMessages,
           },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.API_KEY}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
+        session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
+        await session.save();
+        return res.json({ reply });
+      } catch (error) {
+        if (error.response && error.response.data && error.response.data.error) {
+          return res.status(error.response.status).json({ error: error.response.data.error.message });
+        } else {
+          return res.status(500).json({ error: 'Failed to get response from Claude.' });
         }
-      );
-      const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
-      session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
-      await session.save();
-      return res.json({ reply });
+      }
     }
     // If no last question found, fall through to normal chat
   }
@@ -202,7 +218,7 @@ exports.handleChat = async (req, res) => {
     // If no MCQ is active or previous set finished, generate a new MCQ
     if (!session.mcqState || !session.mcqState.active || !session.mcqState.currentMCQ) {
       const mcq = await generateMCQ(language);
-      if (!mcq) {
+      if (mcq.error) {
         session.mcqState = undefined;
         await session.save();
         const errorMsg = langKey === 'en' ? 'Sorry, could not generate a question. MCQ mode ended. You can ask any other Political Science question.' :
@@ -244,7 +260,7 @@ exports.handleChat = async (req, res) => {
       session.messages.push({ role: "bot", text: feedback, timestamp: new Date() });
       // Generate and ask the next MCQ
       const nextMCQ = await generateMCQ(language);
-      if (!nextMCQ) {
+      if (nextMCQ.error) {
         session.mcqState = undefined;
         await session.save();
         const errorMsg = langKey === 'en' ? 'Sorry, could not generate a question. MCQ mode ended. You can ask any other Political Science question.' :
@@ -264,7 +280,7 @@ exports.handleChat = async (req, res) => {
     } else if (isMCQRequest) {
       // If the user is requesting more MCQs, generate a new one
       const nextMCQ = await generateMCQ(language);
-      if (!nextMCQ) {
+      if (nextMCQ.error) {
         session.mcqState = undefined;
         await session.save();
         const errorMsg = langKey === 'en' ? 'Sorry, could not generate a question. MCQ mode ended. You can ask any other Political Science question.' :
@@ -314,24 +330,32 @@ exports.handleChat = async (req, res) => {
       { role: "system", content: learnPrompt },
       ...session.messages.slice(-5).map(m => ({ role: m.role, content: m.text }))
     ];
-    const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "anthropic/claude-3-haiku",
-        max_tokens: 1000,
-        messages: aiMessages,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_KEY}`,
-          "Content-Type": "application/json",
+    try {
+      const response = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: "anthropic/claude-3-haiku",
+          max_tokens: 1000,
+          messages: aiMessages,
         },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
+      session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
+      await session.save();
+      return res.json({ reply });
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return res.status(error.response.status).json({ error: error.response.data.error.message });
+      } else {
+        return res.status(500).json({ error: 'Failed to get response from Claude.' });
       }
-    );
-    const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
-    session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
-    await session.save();
-    return res.json({ reply });
+    }
   }
   if (quickAction === "random") {
     session.mode = "random";
@@ -349,25 +373,33 @@ exports.handleChat = async (req, res) => {
       { role: "system", content: randomPrompt },
       ...session.messages.slice(-5).map(m => ({ role: m.role, content: m.text }))
     ];
-    const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "anthropic/claude-3-haiku",
-        max_tokens: 1000,
-        messages: aiMessages,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_KEY}`,
-          "Content-Type": "application/json",
+    try {
+      const response = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: "anthropic/claude-3-haiku",
+          max_tokens: 1000,
+          messages: aiMessages,
         },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
+      session.lastRandomQuestion = reply;
+      session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
+      await session.save();
+      return res.json({ reply });
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return res.status(error.response.status).json({ error: error.response.data.error.message });
+      } else {
+        return res.status(500).json({ error: 'Failed to get response from Claude.' });
       }
-    );
-    const reply = response.data?.choices?.[0]?.message?.content || "No response from Edubot.";
-    session.lastRandomQuestion = reply;
-    session.messages.push({ role: "bot", text: reply, timestamp: new Date() });
-    await session.save();
-    return res.json({ reply });
+    }
   }
   if (quickAction === "help") {
     session.mode = "general";
@@ -445,8 +477,13 @@ exports.handleChat = async (req, res) => {
     res.json({ reply: claudeReply });
   } catch (error) {
     // Log and handle errors
-    console.error("Claude API Error:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to get response from Claude." });
+    if (error.response && error.response.data && error.response.data.error) {
+      console.error("Claude API Error:", error.response.data.error.message);
+      return res.status(error.response.status).json({ error: error.response.data.error.message });
+    } else {
+      console.error("Claude API Error:", error.message);
+      return res.status(500).json({ error: "Failed to get response from Claude." });
+    }
   }
 };
 
