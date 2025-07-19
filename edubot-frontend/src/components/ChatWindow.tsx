@@ -15,13 +15,15 @@ interface ChatWindowProps {
   onRate: (messageId: string, rating: number) => void;
   isTyping?: boolean;
   language: string;
+  onEditMessage?: (messageId: string, newText: string) => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ 
   messages, 
   onRate, 
   isTyping, 
-  language 
+  language, 
+  onEditMessage 
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -111,6 +113,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <MessageBubble
                   message={message}
                   onRate={onRate}
+                  onEditMessage={onEditMessage}
                 />
               </div>
             ))}

@@ -61,3 +61,12 @@ export async function renameChatSession(id: string, title: string) {
   });
   return await response.json();
 }
+
+export async function editMessage(sessionId: string, messageId: string, text: string) {
+  const response = await fetch(`${API_URL}/api/history/${sessionId}/message/${messageId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  return await response.json();
+}

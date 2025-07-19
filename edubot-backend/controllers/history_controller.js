@@ -95,4 +95,27 @@ exports.updateHistoryTitle = async (req, res) => {
     console.error('Error renaming chat session:', error);
     res.status(500).json({ error: 'Failed to rename chat session.' });
   }
+};
+
+// PATCH /api/history/:sessionId/message/:messageId - Edit a user message in a chat session
+exports.editMessage = async (req, res) => {
+  try {
+    const { sessionId, messageId } = req.params;
+    const { text } = req.body;
+    if (!sessionId || !messageId || !text) {
+      return res.status(400).json({ error: 'sessionId, messageId, and text are required.' });
+    }
+    const session = await ChatSession.findOne({ sessionId });
+    if (!session) return res.status(404).json({ error: 'Session not found.' });
+    const msg = session.messages.id(messageId);
+    if (!msg) return res.status(404).json({ error: 'Message not found.' });
+    // Only allow editing user messages
+    if (msg.role !== 'user') return res.status(403).json({ error: 'Only user messages can be edited.' });
+    msg.text = text;
+    await session.save();
+    res.json({ success: true, message: msg });
+  } catch (error) {
+    console.error('Error editing message:', error);
+    res.status(500).json({ error: 'Failed to edit message.' });
+  }
 }; 

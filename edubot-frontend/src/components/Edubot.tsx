@@ -5,7 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { ChatHistory } from './ChatHistory';
 import { useToast } from '@/hooks/use-toast';
-import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession, renameChatSession } from '@/service/chatService';
+import { sendMessage, saveMessageToHistory, fetchChatHistory, fetchAllSessions, deleteChatSession, renameChatSession, editMessage as editMessageApi } from '@/service/chatService';
 import { getUserIdFromToken } from '@/lib/utils';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
@@ -375,6 +375,43 @@ export const Edubot: React.FC = () => {
     // Messages will be loaded by useEffect on sessionId
   };
 
+  // Edit message handler
+  const handleEditMessage = useCallback(async (messageId: string, newText: string) => {
+    if (!sessionId) return;
+    try {
+      // Find the index of the edited message
+      const idx = messages.findIndex(msg => msg.id === messageId);
+      if (idx === -1) return;
+
+      // Truncate messages up to and including the edited message
+      const newMessages = [
+        ...messages.slice(0, idx),
+        { ...messages[idx], text: newText }
+      ];
+      setMessages(newMessages);
+
+      // Update the backend message text
+      await editMessageApi(sessionId, messageId, newText);
+
+      // Send the edited message as a new message to the backend to get a new bot response
+      setIsTyping(true);
+      const response = await sendMessage(newText, mapLanguage(currentLanguage), sessionId);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: generateMessageId(),
+          text: response.reply,
+          sender: 'bot',
+          timestamp: new Date(),
+        }
+      ]);
+    } catch (err) {
+      console.error('Failed to edit message:', err);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [sessionId, messages, currentLanguage]);
+
   return (
     <div className="flex h-screen bg-background">
       <ChatHistory
@@ -402,6 +439,7 @@ export const Edubot: React.FC = () => {
           onRate={handleRateMessage}
           isTyping={isTyping}
           language={currentLanguage}
+          onEditMessage={handleEditMessage}
         />
         
         {/* Only show QuickActions if showQuickActions is true and there are no messages */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThumbsUp, ThumbsDown, Star } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Star, Edit3, Check, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from 'react-markdown';
 import { User } from 'lucide-react';
@@ -15,6 +15,7 @@ interface Message {
 interface MessageBubbleProps {
   message: Message;
   onRate?: (messageId: string, rating: number) => void;
+  onEditMessage?: (messageId: string, newText: string) => void;
 }
 
 // Enhanced response formatter utility
@@ -81,9 +82,21 @@ const formatBotResponse = (text: string): string => {
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
-  onRate 
+  onRate,
+  onEditMessage
 }) => {
   const isBot = message.sender === 'bot';
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editText, setEditText] = React.useState(message.text);
+
+  const handleEdit = () => setIsEditing(true);
+  const handleEditCancel = () => { setIsEditing(false); setEditText(message.text); };
+  const handleEditSave = () => {
+    if (onEditMessage && editText.trim() && editText !== message.text) {
+      onEditMessage(message.id, editText.trim());
+    }
+    setIsEditing(false);
+  };
 
   return (
     <div className={`flex w-full mb-4 ${isBot ? 'justify-start' : 'justify-end'}`}>
@@ -124,7 +137,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               </ReactMarkdown>
             </div>
           ) : (
-            <span className="text-sm leading-relaxed">{message.text}</span>
+            isEditing ? (
+              <div className="flex items-center gap-2">
+                <input
+                  className="flex-1 rounded px-2 py-1 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editText}
+                  onChange={e => setEditText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleEditSave();
+                    if (e.key === 'Escape') handleEditCancel();
+                  }}
+                  autoFocus
+                />
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleEditSave}><Check className="w-4 h-4 text-green-600" /></Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleEditCancel}><X className="w-4 h-4 text-red-600" /></Button>
+              </div>
+            ) : (
+              <span className="text-sm leading-relaxed">{message.text}</span>
+            )
+          )}
+          {/* Edit icon for user messages */}
+          {!isBot && !isEditing && onEditMessage && (
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-2" onClick={handleEdit} title="Edit message">
+              <Edit3 className="w-4 h-4 text-slate-400" />
+            </Button>
           )}
         </div>
         
