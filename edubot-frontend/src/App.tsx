@@ -6,10 +6,24 @@ import { ThemeProvider } from '@/components/ThemeToggle';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem('jwt_token'));
+    const token = localStorage.getItem('jwt_token');
+    console.log('[App] useEffect: jwt_token in localStorage:', token);
+    setIsAuthenticated(!!token);
+    setLoading(false);
   }, []);
+
+  const handleLogin = () => {
+    const token = localStorage.getItem('jwt_token');
+    console.log('[App] handleLogin: jwt_token in localStorage after login:', token);
+    setIsAuthenticated(true);
+  };
+
+  if (loading) {
+    return <div>Loading...</div>; // Or a spinner
+  }
 
   return (
     <ThemeProvider>
@@ -17,7 +31,7 @@ function App() {
         <Routes>
           <Route
             path="/login"
-            element={<Login onLogin={() => setIsAuthenticated(true)} />}
+            element={<Login onLogin={handleLogin} />}
           />
           <Route
             path="/"

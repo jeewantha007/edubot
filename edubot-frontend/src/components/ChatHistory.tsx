@@ -10,9 +10,12 @@ import {
   Clock, 
   BookOpen,
   HelpCircle,
-  Brain
+  Brain,
+  Search,
+  MoreHorizontal,
+  Archive
 } from 'lucide-react';
-import { format, isToday, isYesterday, parseISO } from 'date-fns';
+
 
 interface ChatSession {
   id: string;
@@ -90,25 +93,29 @@ const getCategoryIcon = (category: ChatSession['category']) => {
 const getCategoryColor = (category: ChatSession['category']) => {
   switch (category) {
     case 'learn':
-      return 'bg-primary/10 text-primary';
+      return 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-900';
     case 'practice':
-      return 'bg-accent/10 text-accent';
+      return 'bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-900';
     case 'help':
-      return 'bg-secondary/10 text-secondary';
+      return 'bg-green-50 dark:bg-green-950/50 text-green-600 dark:text-green-300 border-green-200 dark:border-green-900';
     default:
-      return 'bg-muted text-muted-foreground';
+      return 'bg-gray-50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800';
   }
 };
 
 const formatTimestamp = (timestamp: string) => {
-  const date = parseISO(timestamp);
+  const date = new Date(timestamp);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const inputDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   
-  if (isToday(date)) {
-    return format(date, 'HH:mm');
-  } else if (isYesterday(date)) {
+  if (inputDate.getTime() === today.getTime()) {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  } else if (inputDate.getTime() === yesterday.getTime()) {
     return 'Yesterday';
   } else {
-    return format(date, 'MMM dd');
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 };
 
@@ -120,6 +127,12 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   currentChatId = '1'
 }) => {
   const [chatSessions] = useState<ChatSession[]>(mockChatSessions);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredSessions = chatSessions.filter(session =>
+    session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    session.preview.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (!isOpen) return null;
 
@@ -127,94 +140,150 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
     <div className="fixed inset-0 z-50 lg:relative lg:inset-auto">
       {/* Mobile overlay */}
       <div 
-        className="absolute inset-0 bg-black/50 lg:hidden"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className="absolute left-0 top-0 h-full w-80 bg-card border-r border-border shadow-lg lg:relative lg:shadow-none">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-foreground">Chat History</h2>
+      <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-slate-50 to-white border-r border-slate-200 shadow-xl lg:relative lg:shadow-none">
+        {/* Header with gradient */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-10 dark:opacity-30" />
+          <div className="relative flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-gray-800/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700">
+                <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h2 className="font-bold text-slate-800 dark:text-white">Chat History</h2>
+                <p className="text-xs text-slate-500 dark:text-gray-400">{chatSessions.length} conversations</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="lg:hidden hover:bg-white/50 dark:hover:bg-gray-800/50"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="lg:hidden"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="p-4 bg-white/50 dark:bg-black/20 border-b border-slate-100 dark:border-gray-800">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl text-sm placeholder:text-slate-400 dark:placeholder:text-gray-500 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/30 focus:border-blue-400 dark:focus:border-blue-500 transition-all"
+            />
+          </div>
         </div>
 
         {/* New Chat Button */}
-        <div className="p-4">
+        <div className="p-4 bg-white/30 dark:bg-black/10">
           <Button
             onClick={onNewChat}
-            className="w-full justify-start gap-2 h-11"
+            className="w-full justify-start gap-3 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-400 dark:hover:to-purple-400 shadow-lg hover:shadow-xl dark:shadow-black/20 transition-all duration-200 transform hover:scale-[1.02] text-white"
             variant="default"
           >
-            <Plus className="w-4 h-4" />
+            <div className="p-1 bg-white/20 dark:bg-black/20 rounded-md">
+              <Plus className="w-4 h-4" />
+            </div>
             New Chat
           </Button>
         </div>
 
         {/* Chat Sessions */}
         <ScrollArea className="flex-1 px-4">
-          <div className="space-y-2 pb-4">
-            {chatSessions.map((session) => (
-              <div
-                key={session.id}
-                className={`
-                  group cursor-pointer rounded-lg p-3 border transition-all hover:bg-accent/5
-                  ${currentChatId === session.id 
-                    ? 'bg-primary/5 border-primary/20' 
-                    : 'bg-card border-border/50 hover:border-border'
-                  }
-                `}
-                onClick={() => onSelectChat?.(session.id)}
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className={`
-                      p-1.5 rounded-full flex-shrink-0
-                      ${getCategoryColor(session.category)}
-                    `}>
-                      {getCategoryIcon(session.category)}
-                    </div>
-                    <h3 className="font-medium text-sm text-foreground truncate">
-                      {session.title}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-                    <Clock className="w-3 h-3" />
-                    {formatTimestamp(session.timestamp)}
-                  </div>
-                </div>
-                
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                  {session.preview}
-                </p>
-                
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="text-xs">
-                    {session.messageCount} messages
-                  </Badge>
-                  {currentChatId === session.id && (
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                  )}
-                </div>
+          <div className="space-y-3 pb-6">
+            {filteredSessions.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 dark:text-gray-500">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No conversations found</p>
               </div>
-            ))}
+            ) : (
+              filteredSessions.map((session, index) => (
+                <div
+                  key={session.id}
+                  className={`
+                    group cursor-pointer rounded-2xl p-4 border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 dark:hover:shadow-black/20
+                    ${currentChatId === session.id 
+                      ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-900 dark:to-black border-blue-200 dark:border-gray-700 shadow-md ring-1 ring-blue-200 dark:ring-gray-600' 
+                      : 'bg-white dark:bg-gray-900/80 border-slate-200 dark:border-gray-800 hover:border-slate-300 dark:hover:border-gray-700'
+                    }
+                  `}
+                  onClick={() => onSelectChat?.(session.id)}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className={`
+                        p-2 rounded-xl border transition-all group-hover:scale-110
+                        ${getCategoryColor(session.category)}
+                      `}>
+                        {getCategoryIcon(session.category)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-slate-800 dark:text-white truncate text-sm leading-tight">
+                          {session.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-gray-400">
+                            <Clock className="w-3 h-3" />
+                            {formatTimestamp(session.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <p className="text-xs text-slate-600 dark:text-gray-300 line-clamp-2 mb-3 leading-relaxed">
+                    {session.preview}
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 border-slate-200 dark:border-gray-700 hover:bg-slate-200 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {session.messageCount} messages
+                    </Badge>
+                    {currentChatId === session.id && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400 rounded-full animate-pulse" />
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Active</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-border">
-          <div className="text-xs text-muted-foreground text-center">
-            {chatSessions.length} chat sessions saved
+        {/* Enhanced Footer */}
+        <div className="p-4 border-t border-slate-200 dark:border-gray-800 bg-gradient-to-r from-slate-50 to-white dark:from-gray-900 dark:to-black">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
+            <div className="flex items-center gap-2">
+              <Archive className="w-3 h-3" />
+              <span>{chatSessions.length} saved</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-green-500 dark:bg-green-400 rounded-full" />
+              <span>Synced</span>
+            </div>
           </div>
         </div>
       </div>

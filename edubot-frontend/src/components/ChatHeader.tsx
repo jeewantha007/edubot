@@ -35,8 +35,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    console.log('[ChatHeader] handleLogout: Removing jwt_token and username from localStorage');
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('username');
+    console.log('[ChatHeader] handleLogout: jwt_token after remove:', localStorage.getItem('jwt_token'));
+    console.log('[ChatHeader] handleLogout: username after remove:', localStorage.getItem('username'));
     navigate('/login');
   };
 

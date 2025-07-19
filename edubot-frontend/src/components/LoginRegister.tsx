@@ -78,6 +78,8 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
         if (data.token) {
           localStorage.setItem('jwt_token', data.token);
           localStorage.setItem('username', data.username); // Store username
+          console.log('[LoginRegister] handleSubmit: jwt_token set to:', data.token);
+          console.log('[LoginRegister] handleSubmit: username set to:', data.username);
           if (onLoginSuccess) onLoginSuccess();
         }
       } else {
