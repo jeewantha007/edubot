@@ -117,17 +117,17 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light via-background to-accent-light flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-lg border-0 bg-card/95 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light via-background to-accent-light dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg border-0 bg-card/95 dark:bg-gray-900/95 backdrop-blur-sm">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-            <MessageCircle className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto w-16 h-16 bg-primary dark:bg-blue-900 rounded-full flex items-center justify-center">
+            <MessageCircle className="w-8 h-8 text-primary-foreground dark:text-blue-200" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-foreground">
+            <CardTitle className="text-2xl font-bold text-foreground dark:text-white">
               Welcome to Edubot
             </CardTitle>
-            <CardDescription className="text-muted-foreground">
+            <CardDescription className="text-muted-foreground dark:text-gray-400">
               Your A/L Political Science Learning Companion
             </CardDescription>
           </div>
@@ -135,31 +135,31 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
 
         <CardContent>
           <Tabs value={isLogin ? 'login' : 'register'} onValueChange={switchMode}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login" className="font-medium">Login</TabsTrigger>
-              <TabsTrigger value="register" className="font-medium">Register</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 dark:bg-gray-800">
+              <TabsTrigger value="login" className="font-medium dark:text-white">Login</TabsTrigger>
+              <TabsTrigger value="register" className="font-medium dark:text-white">Register</TabsTrigger>
             </TabsList>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <TabsContent value="login" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
+                  <Label htmlFor="email" className="text-sm font-medium dark:text-gray-200">
                     Email Address
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground dark:text-gray-500" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="Enter your email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="pl-10 h-12 text-base"
+                      className="pl-10 h-12 text-base bg-white dark:bg-gray-900 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700"
                     />
                   </div>
                   {errors.email && (
-                    <Alert className="py-2">
-                      <AlertDescription className="text-sm text-destructive">
+                    <Alert className="py-2 bg-red-50 dark:bg-red-900/20">
+                      <AlertDescription className="text-sm text-destructive dark:text-red-300">
                         {errors.email}
                       </AlertDescription>
                     </Alert>
@@ -167,18 +167,18 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
+                  <Label htmlFor="password" className="text-sm font-medium dark:text-gray-200">
                     Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground dark:text-gray-500" />
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Enter your password"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="pl-10 pr-10 h-12 text-base"
+                      className="pl-10 pr-10 h-12 text-base bg-white dark:bg-gray-900 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700"
                     />
                     <Button
                       type="button"
@@ -191,8 +191,8 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                     </Button>
                   </div>
                   {errors.password && (
-                    <Alert className="py-2">
-                      <AlertDescription className="text-sm text-destructive">
+                    <Alert className="py-2 bg-red-50 dark:bg-red-900/20">
+                      <AlertDescription className="text-sm text-destructive dark:text-red-300">
                         {errors.password}
                       </AlertDescription>
                     </Alert>
@@ -200,7 +200,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                 </div>
 
                 <div className="text-right">
-                  <Button variant="link" className="p-0 h-auto text-sm text-primary">
+                  <Button variant="link" className="p-0 h-auto text-sm text-primary dark:text-blue-300">
                     Forgot password?
                   </Button>
                 </div>
@@ -208,23 +208,23 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
 
               <TabsContent value="register" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium">
+                  <Label htmlFor="username" className="text-sm font-medium dark:text-gray-200">
                     Username
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground dark:text-gray-500" />
                     <Input
                       id="username"
                       type="text"
                       placeholder="Choose a username"
                       value={formData.username}
                       onChange={(e) => handleInputChange('username', e.target.value)}
-                      className="pl-10 h-12 text-base"
+                      className="pl-10 h-12 text-base bg-white dark:bg-gray-900 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700"
                     />
                   </div>
                   {errors.username && (
-                    <Alert className="py-2">
-                      <AlertDescription className="text-sm text-destructive">
+                    <Alert className="py-2 bg-red-50 dark:bg-red-900/20">
+                      <AlertDescription className="text-sm text-destructive dark:text-red-300">
                         {errors.username}
                       </AlertDescription>
                     </Alert>
@@ -232,23 +232,23 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-email" className="text-sm font-medium">
+                  <Label htmlFor="reg-email" className="text-sm font-medium dark:text-gray-200">
                     Email Address
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground dark:text-gray-500" />
                     <Input
                       id="reg-email"
                       type="email"
                       placeholder="Enter your email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="pl-10 h-12 text-base"
+                      className="pl-10 h-12 text-base bg-white dark:bg-gray-900 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700"
                     />
                   </div>
                   {errors.email && (
-                    <Alert className="py-2">
-                      <AlertDescription className="text-sm text-destructive">
+                    <Alert className="py-2 bg-red-50 dark:bg-red-900/20">
+                      <AlertDescription className="text-sm text-destructive dark:text-red-300">
                         {errors.email}
                       </AlertDescription>
                     </Alert>
@@ -256,18 +256,18 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-password" className="text-sm font-medium">
+                  <Label htmlFor="reg-password" className="text-sm font-medium dark:text-gray-200">
                     Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground dark:text-gray-500" />
                     <Input
                       id="reg-password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Create a password"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="pl-10 pr-10 h-12 text-base"
+                      className="pl-10 pr-10 h-12 text-base bg-white dark:bg-gray-900 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700"
                     />
                     <Button
                       type="button"
@@ -280,8 +280,8 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                     </Button>
                   </div>
                   {errors.password && (
-                    <Alert className="py-2">
-                      <AlertDescription className="text-sm text-destructive">
+                    <Alert className="py-2 bg-red-50 dark:bg-red-900/20">
+                      <AlertDescription className="text-sm text-destructive dark:text-red-300">
                         {errors.password}
                       </AlertDescription>
                     </Alert>
@@ -289,18 +289,18 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password" className="text-sm font-medium">
+                  <Label htmlFor="confirm-password" className="text-sm font-medium dark:text-gray-200">
                     Confirm Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground dark:text-gray-500" />
                     <Input
                       id="confirm-password"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Confirm your password"
                       value={formData.confirmPassword}
                       onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                      className="pl-10 pr-10 h-12 text-base"
+                      className="pl-10 pr-10 h-12 text-base bg-white dark:bg-gray-900 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700"
                     />
                     <Button
                       type="button"
@@ -313,8 +313,8 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onLoginSuccess }) 
                     </Button>
                   </div>
                   {errors.confirmPassword && (
-                    <Alert className="py-2">
-                      <AlertDescription className="text-sm text-destructive">
+                    <Alert className="py-2 bg-red-50 dark:bg-red-900/20">
+                      <AlertDescription className="text-sm text-destructive dark:text-red-300">
                         {errors.confirmPassword}
                       </AlertDescription>
                     </Alert>

@@ -237,11 +237,11 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
       />
       
       {/* Sidebar - Now using flex column with proper height */}
-      <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-slate-50 to-white border-r border-slate-200 shadow-xl lg:relative lg:shadow-none flex flex-col">
+      <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-black border-r border-slate-200 dark:border-gray-800 shadow-xl lg:relative lg:shadow-none flex flex-col">
         {/* Header with gradient - Fixed height */}
         <div className="relative overflow-hidden flex-shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-10 dark:opacity-30" />
-          <div className="relative flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-gray-800/50">
+          <div className="relative flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-gray-800/50 bg-white/90 dark:bg-gray-900/90">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700">
                 <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -263,7 +263,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
         </div>
 
         {/* Search Bar - Fixed height */}
-        <div className="p-4 bg-white/50 dark:bg-black/20 border-b border-slate-100 dark:border-gray-800 flex-shrink-0">
+        <div className="p-4 bg-white/50 dark:bg-black/30 border-b border-slate-100 dark:border-gray-800 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
             <input
@@ -277,7 +277,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
         </div>
 
         {/* New Chat Button - Fixed height */}
-        <div className="p-4 bg-white/30 dark:bg-black/10 flex-shrink-0">
+        <div className="p-4 bg-white/30 dark:bg-black/20 flex-shrink-0">
           <Button
             onClick={onNewChat}
             className="w-full justify-start gap-3 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-400 dark:hover:to-purple-400 shadow-lg hover:shadow-xl dark:shadow-black/20 transition-all duration-200 transform hover:scale-[1.02] text-white"
@@ -370,7 +370,6 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
                           )}
                         </div>
                       </div>
-                      {/* Action buttons (show on hover, except for active chat) */}
                       <div className="relative">
                         <Button
                           variant="ghost"
